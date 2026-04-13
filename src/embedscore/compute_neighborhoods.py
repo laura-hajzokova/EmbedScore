@@ -1,0 +1,74 @@
+import numpy as np
+from typing import Union
+
+def get_neighbors(D, k=None):
+    '''Get indices of the k nearest neighbours of each point
+    
+    Parameters
+    ----------
+    D    - distance matrix of the shape (N,N)
+    k    - the numer of nearest neighbors
+
+    Return
+    ----------
+    idcs - indices of f the neighbours for each point, matrix of the shape (N,k) 
+    '''
+    R = np.argsort(D, axis=1)
+    return R[:,1:k+1] if k is not None else R
+
+def extract_neighbors_dist(D: np.ndarray,
+                           R: np.ndarray, 
+                           idcs_subset: Union[list, np.array]=None) -> np.ndarray:
+    """
+    Extract the distances to the nearest neighbors for each point or the subset of points.
+
+    Parameters
+    ----------
+    D       - np.ndarray of shape (N, N)
+    R       - np.ndarray of shape (N, k), integer array where each row i
+              contains the k column indices of the nearest neighbours for each point from D.
+    idcs    - indices of the subsetted points
+
+    Returns
+    -------
+    result  : np.ndarray of shape (N, K); distances to the K nearest neighbors.
+    """
+    assert D.ndim == 2 and D.shape[0] == D.shape[1], "D must be square (N, N)"
+    assert R.ndim == 2 and R.shape[0] == D.shape[0], "indices must have shape (N, K) where N matches D"
+
+    N = D.shape[0]
+    K = R.shape[1]
+
+    # If subsetting
+    if idcs_subset is not None:
+        distances = D[np.array(idcs_subset).reshape(-1,1),R[idcs_subset, 0:K]]  # Exclude self (first neighbor)
+    else:
+        distances = D[np.arange(D.shape[0]).reshape(-1, 1), R[:, 0:K]]
+
+    return distances
+
+def extract_neighbors_emb(R: np.ndarray,
+                          idcs_subset: Union[list, np.ndarray]) -> np.ndarray:
+    """
+    Extract the nearest neighbors for the subset of points.
+
+    Parameters
+    ----------
+    R       - np.ndarray of shape (N, k), integer array where each row i
+              contains the k column indices of the nearest neighbours for each point from D.
+    idcs    - indices of the subsetted points
+
+    Returns
+    -------
+    result  : np.ndarray of shape (N, 2); coordinates of the HD neighbors of the points from the subset.
+    """
+    
+    K = R.shape[1]
+
+    if len(idcs_subset) == 1:
+        neighbors = R[idcs_subset, 1:K]
+    else:
+        neighbors = R[idcs_subset, 1:K].flatten()
+    neighbors = np.unique(neighbors)
+    
+    return neighbors
