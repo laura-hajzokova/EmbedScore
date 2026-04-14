@@ -13,6 +13,7 @@ def visualize_links(embedding: np.ndarray,
                     symmetric = True,
                     subsample_edges = False,
                     max_edges: int = 10000,
+                    quantiles: bool = False,
                     metric_name: str = 'Link quality', 
                     axes = None,
                     point_size: int = 4,
@@ -55,7 +56,13 @@ def visualize_links(embedding: np.ndarray,
         links = links[idcs,:]
     else:
         idcs = np.arange(N)
-    
+
+    if quantiles:
+        q_up = np.quantile(np.abs(links), 0.95)
+        q_low = np.quantile(np.abs(links), 0.05)
+        links = np.where(links > q_up, q_up, links)
+        links = np.where(links < q_low, q_low, links)
+
     rows, cols = np.nonzero(np.abs(links) > threshold)
 
     # Only upper triangle to avoid duplicates
