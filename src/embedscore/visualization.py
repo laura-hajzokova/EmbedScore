@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from .compute_neighborhoods import get_neighbors, extract_neighbors_emb
 from typing import Union
+import seaborn as sns
 
 rng = np.random.default_rng(42)
 
@@ -226,3 +227,45 @@ def visualize_HDneighbours(embedding: np.ndarray,
     ax.legend(frameon=False, markerscale=3)
             
     return ax
+
+def plot_correlation_matrix(corr_matrix: np.ndarray, 
+                            labels: list, 
+                            title: str = 'Correlation matrix', 
+                            cmap: str = 'coolwarm', 
+                            vmin: float = -1, 
+                            vmax: float = 1, 
+                            annot: bool = True, 
+                            fmt: str = '.2f'):
+    """
+    Plot a correlation matrix as a heatmap.
+
+    Parameters:
+    -----------
+    corr_matrix : np.ndarray
+        Square matrix of shape (N, N) containing correlation values.
+    labels : list
+        List of length N containing labels for the axes.
+    title : str
+        Title of the plot.
+    cmap : str
+        Colormap to use for the heatmap.
+    vmin : float
+        Minimum value for colormap scaling.
+    vmax : float
+        Maximum value for colormap scaling.
+    annot : bool
+        Whether to annotate the heatmap with correlation values.
+    fmt : str
+        String format for annotations.
+
+    Returns:
+    --------
+    fig, ax : matplotlib figure and axes objects
+    """
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+    sns.heatmap(corr_matrix, cmap=cmap, annot=annot, xticklabels=labels, yticklabels=labels, vmin=vmin, vmax=vmax, fmt=fmt)
+    ax.set_title(title)
+    plt.tight_layout()
+    
+    return fig, ax
