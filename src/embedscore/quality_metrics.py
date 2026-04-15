@@ -565,7 +565,7 @@ def nodes_rank_criteria(links: np.ndarray=None, r_hd: np.ndarray = None, r_ld: n
         nodes   - numpy array (N,), quality of nodes in the original data and the embeddings
     '''
 
-    if method in ['trustworthiness', 'continuity', 'mrre']:
+    if method in ['trustworthiness', 'continuity', 'mrre','qnx']:
         assert links is not None, "Links must be provided for trustworthiness, continuity and mrre"
         return np.sum(links, axis=1)
 
@@ -577,6 +577,6 @@ def nodes_rank_criteria(links: np.ndarray=None, r_hd: np.ndarray = None, r_ld: n
             return counts / K
         elif method == 'jaccard':
             counts_union = np.array([len(np.union1d(a, b)) for a, b in zip(r_hd[:,1:K+1], r_ld[:,1:K+1])])
-            return counts / counts_union
+            return np.ones_like(counts) - (counts / counts_union)
     else:
         print('Invalid method')
