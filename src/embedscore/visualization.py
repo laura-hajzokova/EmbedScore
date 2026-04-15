@@ -228,14 +228,18 @@ def visualize_HDneighbours(embedding: np.ndarray,
             
     return ax
 
-def plot_correlation_matrix(corr_matrix: np.ndarray, 
-                            labels: list, 
-                            title: str = 'Correlation matrix', 
-                            cmap: str = 'coolwarm', 
-                            vmin: float = -1, 
-                            vmax: float = 1, 
-                            annot: bool = True, 
-                            fmt: str = '.2f'):
+def plot_correlation_heatmap(corr_matrix: np.ndarray, 
+                     labels: list, 
+                     title: str = 'Correlation matrix', 
+                     cmap: str = 'coolwarm', 
+                     vmin: float = -1, 
+                     vmax: float = 1, 
+                     annot: bool = True, 
+                     fmt: str = '.2f',
+                     title_fontsize: int = 12,
+                     tick_fontsize: int = 10,
+                     annot_fontsize: int = 8,
+                     ax=None):
     """
     Plot a correlation matrix as a heatmap.
 
@@ -257,15 +261,35 @@ def plot_correlation_matrix(corr_matrix: np.ndarray,
         Whether to annotate the heatmap with correlation values.
     fmt : str
         String format for annotations.
+    title_fontsize : int
+        Font size for the title.
+    tick_fontsize : int
+        Font size for the tick labels.
+    annot_fontsize : int
+        Font size for annotation text.
 
     Returns:
     --------
     fig, ax : matplotlib figure and axes objects
     """
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10, 8))
 
-    fig, ax = plt.subplots(figsize=(10, 8))
-    sns.heatmap(corr_matrix, cmap=cmap, annot=annot, xticklabels=labels, yticklabels=labels, vmin=vmin, vmax=vmax, fmt=fmt)
-    ax.set_title(title)
+    sns.heatmap(
+        corr_matrix,
+        cmap=cmap,
+        annot=annot,
+        fmt=fmt,
+        annot_kws={"size": annot_fontsize},
+        xticklabels=labels,
+        yticklabels=labels,
+        vmin=vmin,
+        vmax=vmax,
+        ax=ax
+    )
+    ax.set_title(title, fontsize=title_fontsize)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right', fontsize=tick_fontsize)
+    ax.set_yticklabels(ax.get_yticklabels(), fontsize=tick_fontsize)
     plt.tight_layout()
-    
-    return fig, ax
+
+    return (fig, ax) if ax is None else ax
