@@ -453,6 +453,59 @@ def link_mrre(D_hd: np.ndarray, D_ld: np.ndarray, r_hd: np.ndarray = None, r_ld:
     
     return links
 
+def link_qnx(D_hd: np.ndarray, D_ld: np.ndarray, r_hd: np.ndarray = None, r_ld: np.ndarray = None, K: int = 100, v: int = 1, w: int = 1, method: str = 'intrusions') -> np.ndarray:
+    '''Computes links based on the Qnx criterion from [4]
+
+    [4]   Lee, J. A. and Verleysen, M. (2009). Quality assessment of dimensionality reduction: Rank-based criteria.
+
+    Parameters
+        ----------
+        D_hd    - numpy array (N,N), distance matrix of the original data
+        D_ld    - numpy array (N,N), distance matrix of the embedding
+        r_hd    - numpy array (N,N), rank matrix of the original data
+        r_ld    - numpy array (N,N), rank matrix of the embedding
+        K       - neighborhood size
+
+        Return
+        ------
+        links   - numpy array (N,N), quality of links between points in the original data and the embeddings
+    '''
+    try:
+        assert D_hd.shape == D_ld.shape, "Distance matrices must have equal shape"
+    except AssertionError as e:
+        print(f"Assertion failed: {e}")
+
+    if r_hd is not None:
+        assert r_hd.shape == D_hd.shape, "r_hd must have the same shape as D_hd"
+    else:
+        r_hd = np.argsort(D_hd, axis=1) # indices of the HD neighbors
+    if r_ld is not None:
+        assert r_ld.shape == D_ld.shape, "r_ld must have the same shape as D_ld"
+    else:        
+        r_ld = np.argsort(D_ld, axis=1) # indices of the LD neighbors
+
+    N = len(D_hd)
+
+    R_hd = np.argsort(r_hd, axis=1) # ranks of the HD neighbors
+    R_ld = np.argsort(r_ld, axis=1) # ranks of the LD neighbors
+
+    if method == 'intrusions':
+        links = np.maximum(R_hd-R_ld, np.zeros_like(R_hd)) ** v
+        with np.errstate(divide='ignore', invalid='ignore'):
+            norm1 = np.where(R_hd != 0, 1 / (R_hd**w), 0)  # 0 is the fallback value
+        idx = r_ld[:,K+1:N]
+    elif method == 'extrusions':
+        links = np.maximum(R_ld-R_hd, np.zeros_like(R_hd)) ** v
+        with np.errstate(divide='ignore', invalid='ignore'):
+            norm1 = np.where(R_ld != 0, 1 / (R_ld**w), 0)  # 0 is the fallback value
+        idx = r_hd[:,K+1:N]
+      
+    links =  links * norm1   # take the ranks of the points that are not in the `hd neighborhood`
+
+    z = np.zeros((N,len(np.arange(K+1,N))))
+    links[np.arange(N)[:, None], idx] = z
+    
+    return links
 
 
 def nodes_stress(links: np.ndarray) -> np.ndarray:
