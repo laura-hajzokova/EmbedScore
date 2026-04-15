@@ -7,190 +7,6 @@ from .compute_neighborhoods import get_neighbors, extract_neighbors_dist
 
 rng = np.random.default_rng(42)
 
-def stress(D_hd: np.ndarray, D_ld: np.ndarray) -> tuple:
-    '''
-    Get the stress metric
-
-    Parameters
-    ----------
-    D_hd - distance matrix of the original data
-    D_ld - distance matrix of the embedding
-
-    Return
-    ------
-    links - quality of links between points in the original data and the embedding
-    nodes - quality of nodes in the original data and the embedding
-    map - quality of the map (stress metric)
-    '''
-
-    D_hd = np.array(D_hd)
-    D_ld = np.array(D_ld)
-    
-    assert D_hd.shape == D_ld.shape
-
-    # normalisation factor
-    links = (D_hd - D_ld) / np.sqrt(np.sum(D_hd**2))
-    nodes = np.sum(links**2, axis=1)
-    map = np.sqrt(np.sum(nodes))
-
-    return links, nodes, map
-
-def precision_maps(D_hd, D_ld, K=None):
-    '''
-    Get the precision maps for the embedding
-
-    Parameters
-    ----------
-    D_hd - distance matrix of the original data
-    D_ld - distance matrix of the embedding
-    k - number of neighbors to consider
-
-    Return
-    ------
-    links - quality of links between points in the original data and the embedding
-    nodes - quality of nodes in the original data and the embedding
-    map - quality of the map (precision metric)
-    '''
-
-    D_hd = np.array(D_hd)
-    D_ld = np.array(D_ld)
-    
-    assert D_hd.shape == D_ld.shape
-
-    N = len(D_hd)
-    if K is None:
-        K = N * 0.02
-
-    R_hd = np.argsort(D_hd, axis=1)
-    R_ld = np.argsort(D_ld, axis=1)
-
-    links = np.zeros_like(D_hd)
-
-    for i in range(N):
-        norm_hd = LA.norm(D_hd[i, R_hd[i, :K]])
-        norm_ld = LA.norm(D_ld[i, R_hd[i, :K]])
-        if norm_hd > 0 and norm_ld > 0:
-            links[i, R_hd[i, :K]] = (D_hd[i, R_hd[i, :K]]/norm_hd) - (D_ld[i, R_hd[i, :K]]/norm_ld)
-
-    nodes = LA.norm(links, axis=1)
-    map = None
-
-    return links, nodes, map
-
-def trustworthiness(D_hd, D_ld, idcs=None, K=None):
-    '''
-    Get the trustworthiness metric
-
-    Parameters
-    ----------
-    D_hd - distance matrix of the original data
-    D_ld - distance matrix of the embedding
-    k - number of neighbors to consider
-
-    Return
-    ------
-    links - quality of links between points in the original data and the embedding
-    nodes - quality of nodes in the original data and the embedding
-    map - quality of the map (trustworthiness metric)
-    '''
-
-    D_hd = np.array(D_hd)
-    D_ld = np.array(D_ld)
-    
-    assert D_hd.shape == D_ld.shape
-
-    N = len(D_hd)
-
-    R_hd = np.argsort(np.argsort(D_hd, axis=1), axis=1)
-    R_ld = np.argsort(D_ld, axis=1)
-
-    # normalisation factor
-    if K < N/2:
-        norm1 = 2 / (2*N - 3*K - 1)
-        norm2 = 1 / K
-    else:
-        norm1 = 2 / (N-K-1)
-        norm2 = 1 / (N-K)
-
-    if idcs is not None:
-        R_hd = R_hd[idcs,:]
-        links = np.maximum(R_hd - K, 0) * norm1
-        idx0 = 0
-        for i in idcs:
-            for j in range(K, N):
-                idx = R_ld[i, j]
-                links[idx0, idx] = 0
-            idx0 += 1
-    else:
-        links = np.maximum(R_hd - K, 0) * norm1
-        for i in range(N):
-            for j in range(K, N):
-                idx = R_ld[i, j]
-                links[i, idx] = 0
-                
-    nodes = np.sum(links, axis=1) * norm2
-    map = np.sum(nodes)/N
-
-    return links, nodes, map
-
-def continuity(D_hd, D_ld, idcs=None, K=None):
-    '''
-    Get the continuity metric
-
-    Parameters
-    ----------
-    D_hd - distance matrix of the original data
-    D_ld - distance matrix of the embedding
-    k - number of neighbors to consider
-
-    Return
-    ------
-    links - quality of links between points in the original data and the embedding
-    nodes - quality of nodes in the original data and the embedding
-    map - quality of the map (continuity metric)
-    '''
-
-    D_hd = np.array(D_hd)
-    D_ld = np.array(D_ld)
-    
-    assert D_hd.shape == D_ld.shape
-
-    N = len(D_hd)
-
-    R_hd = np.argsort(D_hd, axis=1)
-    R_ld = np.argsort(np.argsort(D_ld, axis=1), axis=1)
-
-    # normalisation factor
-    if K < N/2:
-        norm1 = 2 / (2*N - 3*K - 1)
-        norm2 = 1 / K
-    else:
-        norm1 = 2 / (N-K-1)
-        norm2 = 1 / (N-K)
-
-    if idcs is not None:
-        R_ld = R_ld[idcs,:]
-        links = np.maximum(R_ld - K, 0) * norm1
-        idx0 = 0
-        for i in idcs:
-            for j in range(K, N):
-                idx = R_hd[i, j]
-                links[idx0, idx] = 0
-            idx0 += 1
-    else:
-        links = np.maximum(R_ld - K, 0) * norm1
-        for i in range(N):
-            for j in range(K, N):
-                idx = R_hd[i, j]
-                links[i, idx] = 0
-                
-    nodes = np.sum(links, axis=1) * norm2
-    map = np.sum(nodes)/N
-
-    return links, nodes, map
-
-
-
 def link_stress(D_hd: np.ndarray, D_ld: np.ndarray, method: str = 'classic', norm: Union[np.ndarray, float] = None) -> np.ndarray:
     '''Computes links based on the Kruskall's stress function
 
@@ -419,6 +235,8 @@ def link_mrre(D_hd: np.ndarray, D_ld: np.ndarray, r_hd: np.ndarray = None, r_ld:
     except AssertionError as e:
         print(f"Assertion failed: {e}")
 
+    assert method in ['intrusions', 'extrusions'], "Invalid method"
+
     if r_hd is not None:
         assert r_hd.shape == D_hd.shape, "r_hd must have the same shape as D_hd"
     else:
@@ -454,9 +272,9 @@ def link_mrre(D_hd: np.ndarray, D_ld: np.ndarray, r_hd: np.ndarray = None, r_ld:
     return links
 
 def link_qnx(D_hd: np.ndarray, D_ld: np.ndarray, r_hd: np.ndarray = None, r_ld: np.ndarray = None, K: int = 100, v: int = 1, w: int = 1, method: str = 'intrusions') -> np.ndarray:
-    '''Computes links based on the Qnx criterion from [4]
+    '''Computes links based on the Qnx criterion from [5]
 
-    [4]   Lee, J. A. and Verleysen, M. (2009). Quality assessment of dimensionality reduction: Rank-based criteria.
+    [5]   Lee, J. A. and Verleysen, M. (2009). Quality assessment of dimensionality reduction: Rank-based criteria.
 
     Parameters
         ----------
@@ -474,6 +292,8 @@ def link_qnx(D_hd: np.ndarray, D_ld: np.ndarray, r_hd: np.ndarray = None, r_ld: 
         assert D_hd.shape == D_ld.shape, "Distance matrices must have equal shape"
     except AssertionError as e:
         print(f"Assertion failed: {e}")
+
+    assert method in ['intrusions', 'extrusions'], "Invalid method"
 
     if r_hd is not None:
         assert r_hd.shape == D_hd.shape, "r_hd must have the same shape as D_hd"
@@ -506,6 +326,47 @@ def link_qnx(D_hd: np.ndarray, D_ld: np.ndarray, r_hd: np.ndarray = None, r_ld: 
     links[np.arange(N)[:, None], idx] = z
     
     return links
+
+def link_distance_distortion(D_hd: np.ndarray, D_ld: np.ndarray, norm: float=None, method: str = 'compression', return_const: bool = False) -> np.ndarray:
+    '''Computes links based on the Qnx criterion from [6]
+
+    [6]   Aupetit, M. (2007). Visualizing distortions and recovering topology in continuous projection techniques.
+
+    Parameters
+        ----------
+        D_hd    - numpy array (N,N), distance matrix of the original data
+        D_ld    - numpy array (N,N), distance matrix of the embedding
+        norm    - normalization factor
+        method  - evaluation method, {'compression', 'stretching'}
+
+    Return
+        ------
+        links   - numpy array (N,N), quality of links between points in the original data and the embeddings
+    '''
+    try:
+        assert D_hd.shape == D_ld.shape, "Distance matrices must have equal shape"
+    except AssertionError as e:
+        print(f"Assertion failed: {e}")
+
+    assert method in ['compression', 'stretching'], "Invalid method"
+
+    N = len(D_hd)
+
+    if method == 'compression':
+        links = np.maximum(D_hd-D_ld, np.zeros_like(D_hd))
+    elif method == 'stretching':
+        links = - np.minimum(D_hd-D_ld, np.zeros_like(D_hd))
+
+    if norm is None:
+        norm = 1/(np.max(np.sum(links, axis=1)) - np.min(np.sum(links, axis=1)))
+    
+    links =  links * norm  
+    
+    if return_const:
+        const = np.min(np.sum(links, axis=1)) * norm
+        return links, const
+    else:
+        return links
 
 
 def nodes_stress(links: np.ndarray) -> np.ndarray:
@@ -580,3 +441,37 @@ def nodes_rank_criteria(links: np.ndarray=None, r_hd: np.ndarray = None, r_ld: n
             return np.ones_like(counts) - (counts / counts_union)
     else:
         print('Invalid method')
+
+def nodes_distance_distortion(links: np.ndarray, D_hd: np.ndarray=None, D_ld: np.ndarray=None, method: str = 'compression', const: float=None) -> np.ndarray:
+    '''Computes nodes based on the distance distortion criterion
+
+    Parameters      
+        ----------
+        links   - numpy array (N,N), quality of links between points in the original data and the embeddings
+        D_hd    - numpy array (N,N), distance matrix of the original data
+        D_ld    - numpy array (N,N), distance matrix of the embedding
+        method  - evaluation method, {'compression', 'stretching'}
+        const   - constant to subtract from the sum of links, if None, the sum of links is used
+
+        Return
+        ------
+        nodes   - numpy array (N,), quality of nodes in the original data and the embeddings
+    '''
+
+    assert method in ['compression', 'stretching'], "Invalid method"
+
+    if const is not None:
+        nodes = np.sum(links, axis=1) - const*np.ones(links.shape[0])
+    else:
+        if D_hd is not None and D_ld is not None:
+            assert D_hd.shape == D_ld.shape, "Distance matrices must have equal shape"
+            if method == 'compression':
+                norm_links = np.maximum(D_hd-D_ld, np.zeros_like(D_hd))
+            elif method == 'stretching':
+                norm_links = - np.minimum(D_hd-D_ld, np.zeros_like(D_hd))
+            norm = np.min(np.sum(links, axis=1)) / (np.max(np.sum(links, axis=1)) - np.min(np.sum(links, axis=1)))
+            nodes = np.sum(norm_links, axis=1) * norm
+        else:
+            print("Distance matrices must be provided if const is not provided")
+
+    return nodes
