@@ -1,9 +1,17 @@
 from .visualization import visualize_links, visualize_nodes, visualize_HDneighbours
-from .quality_metrics import link_stress, link_precision_maps, link_projection_error, link_trustworthiness, link_continuity, link_mrre
+from .quality_metrics import link_stress, link_precision_maps, link_projection_error, link_trustworthiness, link_continuity, link_mrre, link_qnx
 
 from .quality_metrics import nodes_stress, nodes_precision_maps, nodes_projection_error, nodes_rank_criteria
 
+from . import quality_metrics as qm
+from . import visualization as viz
+
 __all__ = [
+    "viz",
+    "qm",
+]
+
+'''__all__ = [
     "visualize_links",
     "visualize_nodes",
     "visualize_HDneighbours",
@@ -13,6 +21,7 @@ __all__ = [
     "link_projection_error",
     "link_precision_maps",
     "link_stress",
+    "link_qnx",
     "nodes_stress",
     "nodes_precision_maps",
     "nodes_projection_error",
@@ -20,4 +29,4 @@ __all__ = [
     "get_neighbors",
     "extract_neighbors_dist",
     "extract_neighbors_emb"
-]
+]'''
