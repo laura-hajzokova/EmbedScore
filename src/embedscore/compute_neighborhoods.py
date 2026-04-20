@@ -1,5 +1,8 @@
 import numpy as np
 from typing import Union
+from scipy.spatial import Delaunay
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import floyd_warshall
 
 def get_neighbors(D, k=None):
     '''Get indices of the k nearest neighbours of each point
@@ -72,3 +75,18 @@ def extract_neighbors_emb(R: np.ndarray,
     neighbors = np.unique(neighbors)
     
     return neighbors
+
+def delaunay_distance_matrix(data, adj: bool = False):
+    tri = Delaunay(data)
+    indptr, indices = tri.vertex_neighbor_vertices
+    n = data.shape[0]
+    ones_n = np.ones(len(indices), dtype=int)
+    # Create the sparse adjacency matrix
+    adjacency_matrix = csr_matrix((ones_n, indices, indptr), shape=(n, n))
+    distance_matrix = floyd_warshall(csgraph=adjacency_matrix, directed=False)
+
+    if adj:
+        return distance_matrix, adjacency_matrix
+    else:
+        # Compute the distance matrix
+        return distance_matrix
