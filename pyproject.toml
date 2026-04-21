@@ -15,6 +15,9 @@ dependencies = [
     "anndata",
     "scipy",
     "seaborn",
+    "scikit-learn>=1.8.0",
+    "umap-learn>=0.5.12",
+    "phate>=2.0.0",
 ]
 
 [build-system]
