@@ -369,6 +369,7 @@ def link_distance_distortion(D_hd: np.ndarray, D_ld: np.ndarray, norm: float=Non
         return links
 
 
+
 def nodes_stress(links: np.ndarray) -> np.ndarray:
     '''Computes nodes based on the stress criterion
 
@@ -475,3 +476,31 @@ def nodes_distance_distortion(links: np.ndarray, D_hd: np.ndarray=None, D_ld: np
             print("Distance matrices must be provided if const is not provided")
 
     return nodes
+
+def nodes_topographic_function(d_hd: np.ndarray, d_ld: np.ndarray, adj_hd: np.ndarray, adj_ld: np.ndarray, K: int=1):
+    '''Computes nodes based on the topographic function
+
+    Parameters      
+        ----------
+        d_hd    - numpy array (N,N), distance matrix of the original data given by the Delaunay triangulation
+        d_ld    - numpy array (N,N), distance matrix of the embedding given by the Delaunay triangulation
+        adj_hd  - numpy array (N,N), adjacency matrix of the original data on the Delaunay graph
+        adj_ld  - numpy array (N,N), adjacency matrix of the embedding on the Delaunay graph
+        K       - threshold for the topographic function
+
+        Return
+        ------
+        nodes   - numpy array (N,), quality of nodes in the original data and the embeddings'''
+    
+    assert d_hd.shape == d_ld.shape == adj_hd.shape == adj_ld.shape, \
+        "Distance and adjacency matrices must all have the same shape"
+    
+    def link_penalty(adj, d, threshold):
+        return (adj.toarray() > 0) & (d > threshold)
+   
+    if K > 0:
+        return np.sum(link_penalty(adj_hd, d_ld, K).astype(int), axis=1) 
+    elif K < 0:
+        return np.sum(link_penalty(adj_ld, d_hd, -K).astype(int), axis=1)
+    else:
+        return np.sum(link_penalty(adj_hd, d_ld, 1).astype(int) + link_penalty(adj_ld, d_hd, 1).astype(int), axis=1)
