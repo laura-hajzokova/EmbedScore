@@ -486,7 +486,7 @@ def nodes_topographic_function(d_hd: np.ndarray, d_ld: np.ndarray, adj_hd: np.nd
         d_ld    - numpy array (N,N), distance matrix of the embedding given by the Delaunay triangulation
         adj_hd  - numpy array (N,N), adjacency matrix of the original data on the Delaunay graph
         adj_ld  - numpy array (N,N), adjacency matrix of the embedding on the Delaunay graph
-        K       - threshold for the topographic function
+        K       - threshold for the topographic function, K>0 is analogous to the extrusions, K<0 is analogous to the intrusions
 
         Return
         ------
@@ -504,3 +504,49 @@ def nodes_topographic_function(d_hd: np.ndarray, d_ld: np.ndarray, adj_hd: np.nd
         return np.sum(link_penalty(adj_ld, d_hd, -K).astype(int), axis=1)
     else:
         return np.sum(link_penalty(adj_hd, d_ld, 1).astype(int) + link_penalty(adj_ld, d_hd, 1).astype(int), axis=1)
+    
+
+
+    
+def topographic_produc(D_hd: np.ndarray, D_ld: np.ndarray, r_hd: np.ndarray = None, r_ld: np.ndarray = None, K: int = 100):
+    '''Computes ltopographic product
+
+    Parameters
+        ----------
+        D_hd    - numpy array (N,N), distance matrix of the original data
+        D_ld    - numpy array (N,N), distance matrix of the embedding
+        r_hd    - numpy array (N,N), rank matrix of the original data
+        r_ld    - numpy array (N,N), rank matrix of the embedding
+        K       - neighborhood size
+
+    Return
+        ------
+        links   - numpy array (N,N), quality of links between points in the original data and the embeddings
+    '''
+
+    assert D_hd.shape == D_ld.shape == r_hd.shape == r_ld.shape, "Distance and rank matrices must have the same shape"
+    N = D_hd.shape[0]
+    rows = np.arange(N)[:, None]
+
+    def calculate_links(d, cols_hd, cols_ld):
+        links = np.zeros((N, K), dtype=bool)
+        links = d[rows, cols_ld] / d[rows, cols_hd]
+        return links
+
+    cols_hd = r_hd[:, 1:K+1]
+    cols_ld = r_ld[:, 1:K+1]
+    links_hd = np.zeros((N,N))
+    links_ld = np.zeros((N,N))
+
+    links1 = calculate_links(D_hd,cols_hd,cols_ld)
+    links_hd[rows,cols_ld] = links1
+    
+    links2 = calculate_links(D_ld,cols_hd,cols_ld)
+    links_ld[rows,cols_hd] = links2
+
+    nodes = np.sum(links1 * links2, axis=1)
+
+    # map to be computed
+    map = None
+
+    return (links_hd, links_ld), nodes, map
