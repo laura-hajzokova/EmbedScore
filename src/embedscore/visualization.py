@@ -59,8 +59,8 @@ def visualize_links(embedding: np.ndarray,
         idcs = np.arange(N)
 
     if quantiles:
-        q_up = np.quantile(np.abs(links), 0.95)
-        q_low = np.quantile(np.abs(links), 0.05)
+        q_up = np.quantile(links, 0.95)
+        q_low = np.quantile(links, 0.05)
         links = np.where(links > q_up, q_up, links)
         links = np.where(links < q_low, q_low, links)
 
@@ -127,7 +127,7 @@ def visualize_nodes(points: np.ndarray,
                     metric_name: str = 'Node quality',
                     point_size=4,
                     point_alpha=0.3,
-                    color_map='viridis'):
+                    color_map='coolwarm'):
     """
     Visualize network nodes colored by quality metric
 
