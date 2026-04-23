@@ -127,7 +127,7 @@ def visualize_nodes(points: np.ndarray,
                     metric_name: str = 'Node quality',
                     point_size=4,
                     point_alpha=0.3,
-                    color_map='coolwarm'):
+                    color_map='Spectral'):
     """
     Visualize network nodes colored by quality metric
 
@@ -167,7 +167,7 @@ def visualize_nodes(points: np.ndarray,
     
     # Draw points
     sc = ax.scatter(points_sample[:, 0], points_sample[:, 1], 
-                c=vector_sample, s=point_size, alpha=point_alpha, cmap='viridis', zorder=5)
+                c=vector_sample, s=point_size, alpha=point_alpha, cmap=color_map, zorder=5)
     # Add colorbar
     cbar = plt.colorbar(sc, ax=ax)
     cbar.set_label('Node quality', rotation=270, labelpad=15)
