@@ -505,10 +505,29 @@ def nodes_topographic_function(d_hd: np.ndarray, d_ld: np.ndarray, adj_hd: np.nd
     else:
         return np.sum(link_penalty(adj_hd, d_ld, 1).astype(int) + link_penalty(adj_ld, d_hd, 1).astype(int), axis=1)
     
+def nodes_correlation(D_hd: np.ndarray, D_ld: np.ndarray):
+    '''Computes nodes based on the topographic function
 
-
+    Parameters      
+        ----------
+        D_hd    - numpy array (N,N), distance matrix of the original data  (for spearman's rank coefficien provide rank matrices, for topological correlation provide distances on a graph)
+        D_ld    - numpy array (N,N), distance matrix of the embedding (for spearman's rank coefficien provide rank matrices, for topological correlation provide distances on a graph)
+        
+        Return
+        ------
+        nodes   - numpy array (N,), quality of nodes in the original data and the embeddings'''
     
-def topographic_produc(D_hd: np.ndarray, D_ld: np.ndarray, r_hd: np.ndarray = None, r_ld: np.ndarray = None, K: int = 100):
+    assert D_hd.shape == D_ld.shape, "Distance matrices must all have the same shape"
+
+    D_hd_centered = D_hd - D_hd.mean(axis=1, keepdims=True)
+    D_ld_centered = D_ld - D_ld.mean(axis=1, keepdims=True)
+    numerator = (D_hd_centered * D_ld_centered).sum(axis=1)
+    denominator = np.sqrt((D_hd_centered**2).sum(axis=1) * (D_ld_centered**2).sum(axis=1)) 
+      
+    return numerator / denominator
+
+
+def topographic_product(D_hd: np.ndarray, D_ld: np.ndarray, r_hd: np.ndarray = None, r_ld: np.ndarray = None, K: int = 100):
     '''Computes ltopographic product
 
     Parameters
