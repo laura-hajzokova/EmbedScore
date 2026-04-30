@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 import numpy.linalg as LA   
-from .compute_neighborhoods import get_neighbors, extract_neighbors_dist
+from .compute_neighborhoods import get_neighbors, extract_neighbors_dist, gaussian_distribution, student_t_distribution
 
 rng = np.random.default_rng(42)
 
@@ -569,3 +569,57 @@ def topographic_product(D_hd: np.ndarray, D_ld: np.ndarray, r_hd: np.ndarray = N
     map = None
 
     return (links_hd, links_ld), nodes, map
+
+def KL_divergence(D_hd: np.ndarray, D_ld: np.ndarray, P: np.ndarray=None, Q: np.ndarray=None, perplexity: int=30, tol: float=1e-5) -> np.ndarray:
+    '''Computes links based on the KL divergence between the distributions of distances in the original data and the embedding
+
+    Parameters
+        ----------
+        D_hd        - numpy array (N,N), distance matrix of the original data
+        D_ld        - numpy array (N,N), distance matrix of the embedding
+        P           - numpy array (N,N), distribution of distances in the original data
+        Q           - numpy array (N,N), distribution of distances in the embedding
+        perplexity  - int, perplexity for the Gaussian distribution
+        tol         - float, tolerance for the Gaussian distribution
+
+    Return
+        ------
+        links       - numpy array (N,N), quality of links between points in the original data and the embeddings
+        nodes       - numpy array (N,), quality of nodes in the original data and the embeddings
+    '''
+    assert D_hd.shape == D_ld.shape, "Distance and distribution matrices must have the same shape"
+    
+    if P is None:
+        P = gaussian_distribution(D_hd**2, perplexity=perplexity, tol=tol)
+    if Q is None:
+        Q = student_t_distribution(D_ld**2)
+
+    with np.errstate(divide='ignore', invalid='ignore'):
+        kl_div_links = P * np.log(P / Q)
+        kl_div_links[np.isnan(kl_div_links)] = 0  # set NaNs resulting from 0*log(0) to 0
+        kl_div_nodes = np.sum(kl_div_links, axis=1)
+
+    return kl_div_links, kl_div_nodes
+
+def random_triplet_accuracy(D_hd: np.ndarray, D_ld: np.ndarray, num_triplets: int = 5) -> np.ndarray:
+    
+    # Sampling Triplets
+    anchors = np.arange(D_hd.shape[0])
+    triplets = rng.choice(anchors, (D_hd.shape[0], num_triplets, 2))
+    anchors = anchors.reshape((-1, 1, 1))
+
+    # Generate labels for HD distances
+    b = np.broadcast(anchors, triplets)
+    distances_hd = np.empty(b.shape)
+    distances_hd.flat = [D_hd[u, v] for (u, v) in b]
+    labels_hd = distances_hd[:, :, 0] < distances_hd[:, :, 1]
+
+    # Generate labels for LD distances
+    distances_ld = np.empty(b.shape)
+    distances_ld.flat = [D_ld[u, v] for (u, v) in b]
+    labels_ld = distances_ld[:, :, 0] < distances_ld[:, :, 1]
+
+    correct = np.sum(labels_ld == labels_hd, axis=1)
+    acc = correct / num_triplets
+
+    return acc
