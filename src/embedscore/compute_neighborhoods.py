@@ -3,6 +3,8 @@ from typing import Union
 from scipy.spatial import Delaunay
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import floyd_warshall
+from scipy.spatial.distance import pdist, squareform
+from sklearn.manifold._t_sne import _joint_probabilities
 
 def get_neighbors(D, k=None):
     '''Get indices of the k nearest neighbours of each point
@@ -90,3 +92,52 @@ def delaunay_distance_matrix(data, adj: bool = False):
     else:
         # Compute the distance matrix
         return distance_matrix
+    
+def distance_to_neighbors(D: np.ndarray, R: np.ndarray, K: int=None):
+    N = D.shape[0]
+    mask = np.zeros((N, N), dtype=bool)
+    if K is not None:
+        R = R[:,1:K+1]
+    mask[np.arange(N)[:, None], R] = True
+    D_new = np.where(mask, D, 0)
+    return D_new
+
+def gaussian_distribution(D: np.ndarray, perplexity: int=30, tol: float=1e-5):
+    '''P is a gaussian distribution
+
+    Parameters
+    ----------
+    D       - np.ndarray of shape (N, N), distance matrix
+
+    Returns
+    -------
+    P       - np.ndarray of shape (N, N), the matrix of pairwise similarities in the high-dimensional space
+    '''
+
+    P = _joint_probabilities(D, perplexity, tol)
+    return squareform(P)
+
+def student_t_distribution(D: np.ndarray):
+    '''Q is a heavy-tailed distribution: Student's t-distribution
+
+    Parameters
+    ----------
+    D       - np.ndarray of shape (N, N) or a condensed matrix of shape (N*(N-1)/2,), distance matrix
+
+    Returns
+    -------
+    Q       - np.ndarray of shape (N, N), the matrix of pairwise similarities in the low-dimensional space
+    '''
+
+    if D.ndim == 2:
+        assert D.shape[0] == D.shape[1], "D must be square (N, N)"
+        D = squareform(D)
+
+    machine_epsilon = np.finfo(np.double).eps
+    D /= 1
+    D += 1.0
+    D **= (1 + 1.0) / -2.0
+    Q = np.maximum(D / (2.0 * np.sum(D)), machine_epsilon)
+
+    return squareform(Q)
+
