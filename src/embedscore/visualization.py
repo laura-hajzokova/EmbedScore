@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
 from matplotlib.collections import LineCollection
 from .compute_neighborhoods import get_neighbors, extract_neighbors_emb
 from typing import Union
@@ -11,7 +12,7 @@ def visualize_links(embedding: np.ndarray,
                     links: np.ndarray,
                     idcs: np.ndarray = None, 
                     threshold: float = 0.,
-                    symmetric = True,
+                    symmetric = False,
                     subsample_edges = False,
                     max_edges: int = 10000,
                     quantiles: bool = False,
@@ -86,6 +87,8 @@ def visualize_links(embedding: np.ndarray,
             edges[idx] = [np.array(embedding[i]), np.array(embedding[j])]
             edge_colors[idx] = links[i, j]
 
+    norm_col = Normalize(vmin=np.min(edges), vmax=np.max(edges))
+
     # Create plot
     if axes is None:
         fig, ax = plt.subplots(figsize=(8,8))
@@ -100,13 +103,23 @@ def visualize_links(embedding: np.ndarray,
                         c='black', s=point_size, alpha=point_alpha*0.7, zorder=3)
 
     if len(edges) > 0:
+        # Normalize edge_colors to [0, 1] for alpha mapping
+        edge_colors_arr = np.array(edge_colors)
+        norm = Normalize(vmin=edge_colors_arr.min(), vmax=edge_colors_arr.max())
+        alphas = norm(edge_colors_arr)
+
+        # Get RGBA from colormap, override alpha channel with value-based alpha
+        cmap = plt.get_cmap(edge_cmap)
+        colors = [(*cmap(norm(v))[:3], a) for v, a in zip(edge_colors_arr, alphas)]
+
         # Draw edges
-        lc = LineCollection(edges, linewidths=edge_width, alpha=edge_alpha, cmap=edge_cmap, zorder=2)
-        lc.set_array(np.array(edge_colors))
+        lc = LineCollection(edges, linewidths=edge_width, colors=colors, zorder=2)
         ax.add_collection(lc)
-        
-        # Add colorbar
-        cbar = plt.colorbar(lc, ax=ax)
+
+        # Add colorbar — needs a ScalarMappable since colors are now baked in
+        sm = plt.cm.ScalarMappable(cmap=edge_cmap, norm=norm)
+        sm.set_array(edge_colors_arr)
+        cbar = plt.colorbar(sm, ax=ax)
         cbar.set_label('Link quality', rotation=270, labelpad=15)
 
     ax.set_title(f'{metric_name}')
@@ -127,7 +140,7 @@ def visualize_nodes(points: np.ndarray,
                     metric_name: str = 'Node quality',
                     point_size=4,
                     point_alpha=0.3,
-                    color_map='Spectral'):
+                    color_map='coolwarm'):
     """
     Visualize network nodes colored by quality metric
 
