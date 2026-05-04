@@ -127,7 +127,7 @@ def visualize_links(embedding: np.ndarray,
     ax.set_xticks([])
     ax.set_yticks([])
     plt.tight_layout()
-    plt.show()
+    #plt.show()
 
     if axes is None:
         return fig, ax
@@ -190,7 +190,7 @@ def visualize_nodes(points: np.ndarray,
     ax.set_xticks([])
     ax.set_yticks([])
     plt.tight_layout()  
-    plt.show()
+    #plt.show()
 
     if axes is None:
         return fig, ax
@@ -240,7 +240,7 @@ def visualize_HDneighbours(embedding: np.ndarray,
     ax.set_xticks([])
     ax.set_yticks([])
     ax.legend(frameon=False, markerscale=3)
-    plt.show()
+    #plt.show()
             
     return ax
 
@@ -307,7 +307,7 @@ def plot_correlation_heatmap(corr_matrix: np.ndarray,
     ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right', fontsize=tick_fontsize)
     ax.set_yticklabels(ax.get_yticklabels(), fontsize=tick_fontsize)
     plt.tight_layout()
-    plt.show()
+    #plt.show()
 
     return (fig, ax) if ax is None else ax
 
@@ -358,4 +358,5 @@ def plot_distributions(matrix: np.ndarray, quantiles: Union[np.ndarray]=None, ti
 
     fig.suptitle(title, fontsize=15, fontweight="bold")
     
-    plt.show()
+    #plt.show()
+    return fig, axes
