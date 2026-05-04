@@ -18,8 +18,14 @@ dependencies = [
     "scikit-learn>=1.8.0",
     "umap-learn>=0.5.12",
     "phate>=2.0.0",
+    "opentsne>=1.0.4",
+    "pydiffmap>=0.2.0.1",
+    "vivae",
 ]
 
 [build-system]
 requires = ["uv_build>=0.8.22,<0.9.0"]
 build-backend = "uv_build"
+
+[tool.uv.sources]
+vivae = { git = "https://github.com/saeyslab/ViVAE.git" }
