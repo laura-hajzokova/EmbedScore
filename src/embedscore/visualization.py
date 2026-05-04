@@ -311,7 +311,7 @@ def plot_correlation_heatmap(corr_matrix: np.ndarray,
 
     return (fig, ax) if ax is None else ax
 
-def plot_distributions(matrix: np.ndarray, quantiles: Union[np.ndarray]=None, title: str="Empirical PDF", ax_title: list=None,
+def plot_distributions(matrix: np.ndarray, quantiles: np.ndarray=None, title: str="Empirical PDF", ax_title: list=None,
                    bins: int=50, cols: int=3):
     """
     Plot a normalised histogram (empirical PDF) for each row of a matrix,
@@ -328,7 +328,8 @@ def plot_distributions(matrix: np.ndarray, quantiles: Union[np.ndarray]=None, ti
     """
    
     N = matrix.shape[0]
-    assert (quantiles.shape[1] == N) and (quantiles.shape[0] == 2), "Quantiles should be a 2D array with shape (2, N) where the first row contains the lower quantiles and the second row contains the upper quantiles for each row of the matrix."
+    if quantiles is not None:
+        assert (quantiles.shape[1] == N) and (quantiles.shape[0] == 2), "Quantiles should be a 2D array with shape (2, N) where the first row contains the lower quantiles and the second row contains the upper quantiles for each row of the matrix."
 
     cols = min(cols, N)
     rows = int(np.ceil(N / cols))
@@ -339,8 +340,11 @@ def plot_distributions(matrix: np.ndarray, quantiles: Union[np.ndarray]=None, ti
     axes = np.array(axes).flatten()
 
     for i, row in enumerate(matrix):
-        data = row[(row > quantiles[0, i]) & (row < quantiles[1, i])] if quantiles is not None else row
-        data = data[~np.isnan(data)]                     
+        if quantiles is not None:
+            data = row[(row > quantiles[0, i]) & (row < quantiles[1, i])]
+        else:
+            data = row
+        data = data[~np.isnan(data)]
         ax = axes[i]
         
         ax.hist(data, bins=bins, density=True,
