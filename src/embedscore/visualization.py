@@ -127,6 +127,7 @@ def visualize_links(embedding: np.ndarray,
     ax.set_xticks([])
     ax.set_yticks([])
     plt.tight_layout()
+    plt.show()
 
     if axes is None:
         return fig, ax
@@ -189,6 +190,7 @@ def visualize_nodes(points: np.ndarray,
     ax.set_xticks([])
     ax.set_yticks([])
     plt.tight_layout()  
+    plt.show()
 
     if axes is None:
         return fig, ax
@@ -238,6 +240,7 @@ def visualize_HDneighbours(embedding: np.ndarray,
     ax.set_xticks([])
     ax.set_yticks([])
     ax.legend(frameon=False, markerscale=3)
+    plt.show()
             
     return ax
 
@@ -304,5 +307,55 @@ def plot_correlation_heatmap(corr_matrix: np.ndarray,
     ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right', fontsize=tick_fontsize)
     ax.set_yticklabels(ax.get_yticklabels(), fontsize=tick_fontsize)
     plt.tight_layout()
+    plt.show()
 
     return (fig, ax) if ax is None else ax
+
+def plot_distributions(matrix: np.ndarray, quantiles: Union[np.ndarray]=None, title: str="Empirical PDF", ax_title: list=None,
+                   bins: int=50, cols: int=3):
+    """
+    Plot a normalised histogram (empirical PDF) for each row of a matrix,
+    one subplot per row. Much faster than KDE — suitable for large matrices.
+
+    Parameters
+    ----------
+    matrix        : array-like, shape (N, K)
+    quantiles     : if not None, values below this threshold are excluded before plotting
+    title         : overall figure title
+    ax_title      : list of titles for each subplot
+    bins          : number of histogram bins (int) or a bin-edge array
+    cols          : number of subplot columns
+    """
+   
+    N = matrix.shape[0]
+    assert (quantiles.shape[1] == N) and (quantiles.shape[0] == 2), "Quantiles should be a 2D array with shape (2, N) where the first row contains the lower quantiles and the second row contains the upper quantiles for each row of the matrix."
+
+    cols = min(cols, N)
+    rows = int(np.ceil(N / cols))
+
+    fig, axes = plt.subplots(rows, cols,
+                             figsize=(5 * cols, 4 * rows),
+                             constrained_layout=True)
+    axes = np.array(axes).flatten()
+
+    for i, row in enumerate(matrix):
+        data = row[(row > quantiles[0, i]) & (row < quantiles[1, i])] if quantiles is not None else row
+        data = data[~np.isnan(data)]                     
+        ax = axes[i]
+        
+        ax.hist(data, bins=bins, density=True,
+                color="lightblue", alpha=0.75, edgecolor="none")
+        if ax_title is not None and i < len(ax_title):
+            ax.set_title(ax_title[i], fontsize=10)
+        ax.set_xlabel("Value", fontsize=8)
+        ax.set_ylabel("Density", fontsize=8)
+        ax.tick_params(labelsize=7)
+        ax.grid(True, linestyle="--", alpha=0.4)
+
+    # Hide unused subplots
+    for j in range(N, len(axes)):
+        axes[j].axis("off")
+
+    fig.suptitle(title, fontsize=15, fontweight="bold")
+    
+    plt.show()
